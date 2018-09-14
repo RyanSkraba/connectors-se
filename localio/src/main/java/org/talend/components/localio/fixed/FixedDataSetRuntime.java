@@ -12,11 +12,13 @@
 // ============================================================================
 package org.talend.components.localio.fixed;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.avro.Schema;
-import org.apache.avro.SchemaBuilder;
+import java.io.ByteArrayInputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.IndexedRecord;
 import org.apache.avro.io.DatumReader;
@@ -24,22 +26,12 @@ import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.io.JsonDecoder;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.talend.components.adapter.beam.io.rowgenerator.GeneratorFunction;
-import org.talend.components.adapter.beam.io.rowgenerator.GeneratorFunctions;
 import org.talend.components.localio.LocalIOErrorCode;
-import org.talend.daikon.avro.converter.ComparableIndexedRecordBase;
-import org.talend.daikon.avro.converter.IndexedRecordConverter;
-import org.talend.daikon.avro.converter.JsonGenericRecordConverter;
-import org.talend.daikon.avro.inferrer.JsonSchemaInferrer;
-import org.talend.daikon.java8.Consumer;
-
-import java.io.ByteArrayInputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import org.talend.sdk.component.api.record.Record;
+import org.talend.sdk.component.api.record.Schema;
+import org.talend.sdk.component.api.record.Schema.Type;
+import org.talend.sdk.component.api.service.record.RecordBuilderFactory;
+import org.talend.sdk.component.runtime.beam.spi.record.AvroRecord;
 
 public class FixedDataSetRuntime {
 
@@ -48,16 +40,16 @@ public class FixedDataSetRuntime {
      */
     private FixedDataSetConfiguration configuration;
 
-    public FixedDataSetRuntime(FixedDataSetConfiguration configuration) {
-        this.configuration = configuration;
-    }
+    private RecordBuilderFactory factory;
 
-    /**
-     * @return true if we are generating random data for this runtime.
-     */
-    public boolean isRandom() {
-        return configuration.getFormat() == FixedDataSetConfiguration.RecordFormat.AVRO
-                && configuration.getValues().trim().length() == 0;
+    // Unused -- issue with converting JSON to Record internally.
+    // private JsonReaderFactory jsonpReaderFactory;
+
+    public FixedDataSetRuntime(FixedDataSetConfiguration configuration, RecordBuilderFactory factory
+    // JsonReaderFactory jsonpReaderFactory
+    ) {
+        this.configuration = configuration;
+        this.factory = factory;
     }
 
     public Schema getSchema() {
@@ -71,7 +63,11 @@ public class FixedDataSetRuntime {
                             .withDelimiter(configuration.getFieldDelimiter().charAt(0)) //
                             .withRecordSeparator(configuration.getRecordDelimiter()) //
                             .parse(new StringReader(csvSchema)).iterator().next();
-                    return CsvRecordToIndexedRecordConverter.inferSchema(r);
+                    Schema.Builder sb = factory.newSchemaBuilder(Type.RECORD);
+                    for (String fieldName : r)
+                        sb = sb.withEntry(
+                                factory.newEntryBuilder().withName(fieldName).withType(Type.STRING).withNullable(true).build());
+                    return sb.build();
                 } catch (Exception e) {
                     throw LocalIOErrorCode.createCannotParseSchema(e, csvSchema);
                 }
@@ -86,7 +82,10 @@ public class FixedDataSetRuntime {
                     maxSize = Math.max(maxSize, r.size());
                 if (maxSize == 0)
                     throw LocalIOErrorCode.requireAtLeastOneRecord(new RuntimeException());
-                return CsvRecordToIndexedRecordConverter.inferSchema(maxSize);
+                Schema.Builder sb = factory.newSchemaBuilder(Type.RECORD);
+                for (int i = 0; i < maxSize; i++)
+                    sb = sb.withEntry(factory.newEntryBuilder().withName("field" + i).withType(Type.STRING).build());
+                return sb.build();
             } catch (IOException e) {
                 throw LocalIOErrorCode.createCannotParseSchema(e, configuration.getValues());
             }
@@ -95,176 +94,81 @@ public class FixedDataSetRuntime {
                 throw LocalIOErrorCode.requireAtLeastOneRecord(new RuntimeException());
             return getValues(1).get(0).getSchema();
         case AVRO:
-            try {
-                return new Schema.Parser().parse(configuration.getSchema());
-            } catch (Exception e) {
-                throw LocalIOErrorCode.createCannotParseSchema(e, configuration.getSchema());
-            }
+            // Unused -- direct translation to record.
         }
         throw LocalIOErrorCode.createCannotParseSchema(null, configuration.getSchema());
     }
 
-    public void getSample(int limit, Consumer<IndexedRecord> consumer) {
-        for (IndexedRecord value : getValues(limit)) {
-            consumer.accept(value);
-        }
-    }
-
-    public List<IndexedRecord> getValues(int limit) {
-        List<IndexedRecord> values = new ArrayList<>();
+    public List<Record> getValues(int limit) {
+        List<Record> values = new ArrayList<>();
         switch (configuration.getFormat()) {
         case CSV:
+            Schema csv = getSchema();
             try {
-                CsvRecordToIndexedRecordConverter converter = new CsvRecordToIndexedRecordConverter(getSchema());
                 for (CSVRecord r : CSVFormat.RFC4180 //
                         .withDelimiter(configuration.getFieldDelimiter().charAt(0)) //
                         .withRecordSeparator(configuration.getRecordDelimiter())
-                        .parse(new StringReader(configuration.getValues())))
-                    values.add(converter.convertToAvro(r));
+                        .parse(new StringReader(configuration.getValues()))) {
+                    for (int i = 0; i < r.size(); i++) {
+                        Record.Builder rb = factory.newRecordBuilder();
+                        Schema.Entry e = csv.getEntries().get(i);
+                        rb = rb.withString(e, r.get(i));
+                        values.add(rb.build());
+                    }
+                }
             } catch (IOException e) {
                 throw LocalIOErrorCode.createCannotParseSchema(e, configuration.getValues());
             }
             break;
         case JSON:
-            ObjectMapper mapper = new ObjectMapper();
-            JsonSchemaInferrer jsonSchemaInferrer = new JsonSchemaInferrer(mapper);
-            JsonGenericRecordConverter converter = null;
-            JsonFactory jsonFactory = new JsonFactory();
-            try (StringReader r = new StringReader(configuration.getValues())) {
-                Iterator<JsonNode> value = mapper.readValues(jsonFactory.createParser(r), JsonNode.class);
-                int count = 0;
-                while (value.hasNext() && count++ < limit) {
-                    String json = value.next().toString();
-                    if (converter == null) {
-                        Schema jsonSchema = jsonSchemaInferrer.inferSchema(json);
-                        converter = new JsonGenericRecordConverter(jsonSchema);
-                    }
-                    values.add(converter.convertToAvro(json));
-                }
-            } catch (IOException e) {
-                throw LocalIOErrorCode.createCannotParseJson(e, configuration.getSchema(), configuration.getValues());
-            }
+
+            // ObjectMapper mapper = new ObjectMapper();
+            // JsonSchemaInferrer jsonSchemaInferrer = new JsonSchemaInferrer(mapper);
+            // JsonGenericRecordConverter converter = null;
+            // JsonFactory jsonFactory = new JsonFactory();
+            // try (StringReader r = new StringReader(configuration.getValues())) {
+            // JsonReader jsonR = jsonpReaderFactory.createReader(r);
+            // JsonObject obj = jsonR.readObject();
+            // RecordConverters.toRe
+            //
+            //
+            //
+            // }
+            // Iterator<JsonNode> value = mapper.readValues(jsonFactory.createParser(r), JsonNode.class);
+            // int count = 0;
+            // while (value.hasNext() && count++ < limit) {
+            // String json = value.next().toString();
+            // if (converter == null) {
+            // Schema jsonSchema = jsonSchemaInferrer.inferSchema(json);
+            // converter = new JsonGenericRecordConverter(jsonSchema);
+            // }
+            // values.add(converter.convertToAvro(json));
+            // }
+            // } catch (IOException e) {
+            // throw LocalIOErrorCode.createCannotParseJson(e, configuration.getSchema(), configuration.getValues());
+            // }
             break;
         case AVRO:
-            Schema schema = getSchema();
-            if (isRandom()) {
-                GeneratorFunction<IndexedRecord> gf = (GeneratorFunction<IndexedRecord>) GeneratorFunctions.of(getSchema());
-                GeneratorFunction.GeneratorContext ctx = GeneratorFunction.GeneratorContext.of(0, 0L);
-                for (int i = 0; i < limit; i++) {
-                    ctx.setRowId(i);
-                    values.add(gf.apply(ctx));
+            org.apache.avro.Schema schema;
+            try {
+                schema = new org.apache.avro.Schema.Parser().parse(configuration.getSchema());
+            } catch (Exception e) {
+                throw LocalIOErrorCode.createCannotParseSchema(e, configuration.getSchema());
+            }
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(configuration.getValues().trim().getBytes())) {
+                JsonDecoder decoder = DecoderFactory.get().jsonDecoder(schema, bais);
+                DatumReader<IndexedRecord> reader = new GenericDatumReader<>(schema);
+                int count = 0;
+                while (count++ < limit) {
+                    values.add(new AvroRecord(reader.read(null, decoder)));
                 }
-            } else {
-                try (ByteArrayInputStream bais = new ByteArrayInputStream(configuration.getValues().trim().getBytes())) {
-                    JsonDecoder decoder = DecoderFactory.get().jsonDecoder(schema, bais);
-                    DatumReader<IndexedRecord> reader = new GenericDatumReader<>(schema);
-                    int count = 0;
-                    while (count++ < limit) {
-                        values.add(reader.read(null, decoder));
-                    }
-                } catch (EOFException e) {
-                    // Indicates the end of the values.
-                } catch (IOException e) {
-                    throw LocalIOErrorCode.createCannotParseAvroJson(e, configuration.getSchema(), configuration.getValues());
-                }
+            } catch (EOFException e) {
+                // Indicates the end of the values.
+            } catch (IOException e) {
+                throw LocalIOErrorCode.createCannotParseAvroJson(e, configuration.getSchema(), configuration.getValues());
             }
             break;
         }
         return values;
     }
-
-    public static class CsvRecordToIndexedRecordConverter implements IndexedRecordConverter<CSVRecord, CsvIndexedRecord> {
-
-        public static final String RECORD_NAME = "CSVRecord";
-
-        public static final String FIELD_PREFIX = "field";
-
-        private transient Schema schema = null;
-
-        public CsvRecordToIndexedRecordConverter(Schema schema) {
-            this.schema = schema;
-        }
-
-        @Override
-        public Schema getSchema() {
-            return schema;
-        }
-
-        @Override
-        public void setSchema(Schema schema) {
-            this.schema = schema;
-        }
-
-        @Override
-        public Class<CSVRecord> getDatumClass() {
-            return CSVRecord.class;
-        }
-
-        @Override
-        public CSVRecord convertToDatum(CsvIndexedRecord value) {
-            return value.value;
-        }
-
-        @Override
-        public CsvIndexedRecord convertToAvro(CSVRecord value) {
-            return new CsvIndexedRecord(getSchema(), value);
-        }
-
-        /**
-         * Infers an Avro schema for the given String array. This can be an expensive operation so the schema should be
-         * cached where possible. This is always an {@link Schema.Type#RECORD}.
-         *
-         * @param in the DescribeSObjectResult to analyse.
-         * @return the schema for data given from the object.
-         */
-        static Schema inferSchema(CSVRecord in) {
-            List<Schema.Field> fields = new ArrayList<>();
-            SchemaBuilder.FieldAssembler<Schema> fa = SchemaBuilder.record(RECORD_NAME).fields();
-            for (int i = 0; i < in.size(); i++) {
-                fa = fa.name(in.get(i)).type(Schema.create(Schema.Type.STRING)).noDefault();
-            }
-            return fa.endRecord();
-        }
-
-        public static Schema inferSchema(int maxSize) {
-            List<Schema.Field> fields = new ArrayList<>();
-            SchemaBuilder.FieldAssembler<Schema> fa = SchemaBuilder.record(RECORD_NAME).fields();
-            for (int i = 0; i < maxSize; i++) {
-                fa = fa.name(FIELD_PREFIX + i).type(Schema.create(Schema.Type.STRING)).noDefault();
-            }
-            return fa.endRecord();
-        }
-    }
-
-    public static class CsvIndexedRecord extends ComparableIndexedRecordBase {
-
-        private final Schema schema;
-
-        private final CSVRecord value;
-
-        public CsvIndexedRecord(Schema schema, CSVRecord value) {
-            this.schema = schema;
-            this.value = value;
-        }
-
-        @Override
-        public Schema getSchema() {
-            return schema;
-        }
-
-        @Override
-        public Object get(int i) {
-            try {
-                return value.get(i);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                return null;
-            }
-        }
-
-        @Override
-        public void put(int i, Object v) {
-            throw new IndexedRecordConverter.UnmodifiableAdapterException();
-        }
-    }
-
 }
