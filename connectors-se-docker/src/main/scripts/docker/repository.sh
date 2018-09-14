@@ -19,10 +19,11 @@
 work_dir="$BASEDIR/target/docker_repository/image"
 mkdir -p "$work_dir"
 cd "$work_dir"
-    grep '^      <artifactId>' "$BASEDIR/pom.xml" | sed "s#.*<artifactId>\(.*\)</artifactId>#\1=org.talend.components:\1:$CONNECTOR_VERSION#" | sort -u > component-registry.properties
     cp "$BASEDIR/src/main/docker/Dockerfile.repository" Dockerfile
     cp -r "$BASEDIR/target/docker-m2" m2
+    createComponentRegistry
 
     buildAndTag
     pushImage $LAST_IMAGE
 cd -
+echo "-----------------------------------------------------"

@@ -2,8 +2,14 @@ FROM alpine:3.7
 
 ARG BUILD_DATE
 ARG DOCKER_IMAGE_VERSION
+ARG GIT_URL
+ARG GIT_BRANCH
+ARG GIT_REF
 
 LABEL com.talend.maintainer="Talend <support@talend.com>" \
+      com.talend.git.repositories="$GIT_URL" \
+      com.talend.git.branches="$GIT_BRANCH" \
+      com.talend.git.commits="$GIT_REF" \
       com.talend.build-date="$BUILD_DATE" \
       com.talend.name="Talend Connectors SE" \
       com.talend.application="connectors-se" \

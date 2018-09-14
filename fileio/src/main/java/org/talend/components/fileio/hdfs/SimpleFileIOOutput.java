@@ -19,11 +19,11 @@ import org.talend.sdk.component.api.processor.Processor;
 @Documentation("This component writes data to HDFS.")
 public class SimpleFileIOOutput extends PTransform<PCollection<IndexedRecord>, PDone> {
 
-    private final SimpleFileIOOutputDataSet configuration;
+    private final SimpleFileIOOutputConfig configuration;
 
     private final SimpleFileIOConfigurationService service;
 
-    public SimpleFileIOOutput(@Option("configuration") final SimpleFileIOOutputDataSet configuration,
+    public SimpleFileIOOutput(@Option("configuration") final SimpleFileIOOutputConfig configuration,
             final SimpleFileIOConfigurationService service) {
         this.configuration = configuration;
         this.service = service;

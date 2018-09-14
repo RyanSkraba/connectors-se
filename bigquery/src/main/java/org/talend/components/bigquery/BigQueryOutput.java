@@ -19,11 +19,11 @@ import org.talend.sdk.component.api.processor.Processor;
 @Documentation("This component writes inputs to BigQuery.")
 public class BigQueryOutput extends PTransform<PCollection<IndexedRecord>, PDone> {
 
-    private final BigQueryOutputDataSet configuration;
+    private final BigQueryOutputConfig configuration;
 
     private final BigQueryConfigurationService service;
 
-    public BigQueryOutput(@Option("configuration") final BigQueryOutputDataSet configuration,
+    public BigQueryOutput(@Option("configuration") final BigQueryOutputConfig configuration,
             final BigQueryConfigurationService service) {
         this.configuration = configuration;
         this.service = service;

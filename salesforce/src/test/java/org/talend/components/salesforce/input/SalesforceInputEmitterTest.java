@@ -20,6 +20,7 @@ import org.talend.sdk.component.junit.BaseComponentsHandler;
 import org.talend.sdk.component.junit.http.api.HttpApiHandler;
 import org.talend.sdk.component.junit.http.junit5.HttpApi;
 import org.talend.sdk.component.junit.http.junit5.HttpApiInject;
+import org.talend.sdk.component.junit.http.junit5.HttpApiName;
 import org.talend.sdk.component.junit5.Injected;
 import org.talend.sdk.component.junit5.WithComponents;
 import org.talend.sdk.component.junit5.WithMavenServers;
@@ -50,6 +51,7 @@ class SalesforceInputEmitterTest {
     private Server serverWithSecuritykey;
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Bad credentials case")
     void inputWithBadCredential() {
         final BasicDataStore datasore = new BasicDataStore();
@@ -68,6 +70,7 @@ class SalesforceInputEmitterTest {
     }
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Module selection case [valid]")
     void inputWithModuleNameValid() {
         final BasicDataStore datasore = new BasicDataStore();
@@ -89,6 +92,7 @@ class SalesforceInputEmitterTest {
     }
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Module selection case [invalid]")
     void inputWithModuleNameInvalid() {
         final BasicDataStore datasore = new BasicDataStore();
@@ -107,6 +111,7 @@ class SalesforceInputEmitterTest {
     }
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Module selection with fields case [invalid]")
     void inputWithModuleNameValidAndInvalidField() {
         final BasicDataStore datasore = new BasicDataStore();
@@ -126,6 +131,7 @@ class SalesforceInputEmitterTest {
     }
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Soql query selection [valid]")
     void inputWithSoqlQueryValid() {
         final BasicDataStore datasore = new BasicDataStore();
@@ -146,6 +152,7 @@ class SalesforceInputEmitterTest {
     }
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Soql query selection [invalid]")
     void inputWithSoqlQueryInvalid() {
         final BasicDataStore datasore = new BasicDataStore();
@@ -164,6 +171,7 @@ class SalesforceInputEmitterTest {
     }
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Soql query selection [empty result]")
     void inputWithSoqlQueryEmptyResult() {
         final BasicDataStore datasore = new BasicDataStore();

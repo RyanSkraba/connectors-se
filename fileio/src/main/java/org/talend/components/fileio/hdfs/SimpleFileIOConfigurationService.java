@@ -17,9 +17,9 @@ public class SimpleFileIOConfigurationService {
         return properties;
     }
 
-    public SimpleFileIOOutputProperties toOutputConfiguration(final SimpleFileIOOutputDataSet configuration) {
+    public SimpleFileIOOutputProperties toOutputConfiguration(final SimpleFileIOOutputConfig configuration) {
         final SimpleFileIOOutputProperties properties = new SimpleFileIOOutputProperties("name");
-        properties.setDatasetProperties(toDataSet(configuration));
+        properties.setDatasetProperties(toDataSet(configuration.getDataset()));
         properties.mergeOutput.setValue(configuration.isMergeOutput());
         properties.overwrite.setValue(configuration.isOverwrite());
         return properties;

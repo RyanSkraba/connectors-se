@@ -41,7 +41,7 @@ public class ActionService {
         }
         final URLClassLoader loader = jdbcDriversService.getDriverClassLoader(datastore.getDbType());
         if (loader == null) {
-            throw new IllegalStateException(i18n.errorCantLoadDriver(datastore.getDbType()));
+            return new HealthCheckStatus(HealthCheckStatus.Status.KO, i18n.errorCantLoadDriver(datastore.getDbType()));
         }
         try {
             Driver driver = Driver.class

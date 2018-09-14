@@ -13,9 +13,9 @@ import org.talend.sdk.component.api.service.Service;
 @Service
 public class S3ConfigurationService {
 
-    public S3OutputProperties toOutputConfiguration(final S3OutputDataSet configuration) {
+    public S3OutputProperties toOutputConfiguration(final S3OutputConfig configuration) {
         final S3OutputProperties properties = new S3OutputProperties("name");
-        properties.setDatasetProperties(createDataSet(configuration));
+        properties.setDatasetProperties(createDataSet(configuration.getDataset()));
         properties.mergeOutput.setValue(configuration.isMergeOutput());
         properties.overwrite.setValue(configuration.isOverwrite());
         return properties;

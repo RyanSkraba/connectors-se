@@ -2,23 +2,26 @@ package org.talend.components.bigquery;
 
 import static org.talend.sdk.component.api.component.Icon.IconType.BIGQUERY;
 
+import java.io.Serializable;
+
 import org.talend.components.bigquery.output.BigQueryOutputProperties;
 import org.talend.sdk.component.api.component.Icon;
 import org.talend.sdk.component.api.configuration.Option;
 import org.talend.sdk.component.api.configuration.type.DataSet;
-import org.talend.sdk.component.api.configuration.ui.layout.GridLayout;
+import org.talend.sdk.component.api.configuration.ui.OptionsOrder;
 import org.talend.sdk.component.api.meta.Documentation;
 
 import lombok.Data;
 
 @Data
 @Icon(BIGQUERY)
-@DataSet("BigQueryOutputDataSet")
 @Documentation("Dataset of a BigQuery component.")
-@GridLayout({ @GridLayout.Row("dataStore"), @GridLayout.Row("bqDataset"), @GridLayout.Row("sourceType"),
-        @GridLayout.Row("tableName"), @GridLayout.Row({ "query", "useLegacySql" }), @GridLayout.Row("tableOperation"),
-        @GridLayout.Row("writeOperation") })
-public class BigQueryOutputDataSet extends BigQueryDataSet {
+@OptionsOrder({ "dataset", "tableOperation", "writeOperation" })
+public class BigQueryOutputConfig implements Serializable {
+
+    @Option
+    @Documentation("BigQuery Dataset")
+    private BigQueryDataSet dataset;
 
     @Option
     @Documentation("The BigQuery table operation")

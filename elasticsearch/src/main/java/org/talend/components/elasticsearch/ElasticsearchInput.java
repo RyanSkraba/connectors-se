@@ -26,11 +26,11 @@ import org.talend.sdk.component.api.meta.Documentation;
 @Documentation("This component reads data from Elasticsearch.")
 public class ElasticsearchInput extends PTransform<PBegin, PCollection<JsonObject>> {
 
-    private final ElasticsearchInputDataSet configuration;
+    private final ElasticsearchInputConfig configuration;
 
     private final JsonReaderFactory readerFactory;
 
-    public ElasticsearchInput(@Option("configuration") final ElasticsearchInputDataSet configuration,
+    public ElasticsearchInput(@Option("configuration") final ElasticsearchInputConfig configuration,
             final JsonReaderFactory readerFactory) {
         this.configuration = configuration;
         this.readerFactory = readerFactory;
@@ -48,14 +48,14 @@ public class ElasticsearchInput extends PTransform<PBegin, PCollection<JsonObjec
     }
 
     private ElasticsearchIO.Read configure() {
-        final ElasticsearchIO.ConnectionConfiguration configuration = ElasticsearchIO.ConnectionConfiguration.create(
-                Stream.of(this.configuration.getDatastore().getNodes().split(",")).map(String::trim).toArray(String[]::new),
-                this.configuration.getIndex(), this.configuration.getType());
-        if (this.configuration.getDatastore().getUsername() != null) {
-            configuration.withUsername(this.configuration.getDatastore().getUsername());
+        final ElasticsearchIO.ConnectionConfiguration configuration = ElasticsearchIO.ConnectionConfiguration
+                .create(Stream.of(this.configuration.getDataset().getDatastore().getNodes().split(",")).map(String::trim).toArray(
+                        String[]::new), this.configuration.getDataset().getIndex(), this.configuration.getDataset().getType());
+        if (this.configuration.getDataset().getDatastore().getUsername() != null) {
+            configuration.withUsername(this.configuration.getDataset().getDatastore().getUsername());
         }
-        if (this.configuration.getDatastore().getPassword() != null) {
-            configuration.withPassword(this.configuration.getDatastore().getPassword());
+        if (this.configuration.getDataset().getDatastore().getPassword() != null) {
+            configuration.withPassword(this.configuration.getDataset().getDatastore().getPassword());
         }
         ElasticsearchIO.Read current = ElasticsearchIO.read().withConnectionConfiguration(configuration);
         if (this.configuration.getQuery() != null && !this.configuration.getQuery().isEmpty()) {

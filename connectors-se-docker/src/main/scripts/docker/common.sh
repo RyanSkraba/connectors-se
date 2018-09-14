@@ -23,7 +23,8 @@ export CONNECTOR_VERSION=$(grep "<version>" "$BASEDIR/pom.xml" | head -n 1 | sed
 export TALEND_REGISTRY="${TALEND_REGISTRY:-registry.datapwn.com}"
 DOCKER_IMAGE_VERSION=${DOCKER_IMAGE_VERSION:-$CONNECTOR_VERSION}
 if [[ "$DOCKER_IMAGE_VERSION" = *"SNAPSHOT" ]]; then
-    DOCKER_IMAGE_VERSION=$(echo $CONNECTOR_VERSION | sed "s/-SNAPSHOT//")_$(date +%Y%m%d%I%M%S)
+    BRANCH=_${1}
+    DOCKER_IMAGE_VERSION=$(echo $CONNECTOR_VERSION | sed "s/-SNAPSHOT//")${BRANCH}_$(date +%Y%m%d%H%M%S)
 fi
 export DOCKER_IMAGE_VERSION
 
@@ -39,6 +40,9 @@ function buildAndTag() {
     echo ""
     docker build \
         --tag "$image" \
+        --build-arg GIT_URL=$(git config --get remote.origin.url) \
+        --build-arg GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD) \
+        --build-arg GIT_REF=$(git rev-parse HEAD) \
         --build-arg DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION \
         --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
         . && \
@@ -65,7 +69,18 @@ function slurpImageFolder() {
     docker container rm -f "$1"
 }
 
+function createComponentRegistry() {
+    grep '^      <artifactId>' "$BASEDIR/pom.xml" | \
+        sed "s#.*<artifactId>\(.*\)</artifactId>#\1=org.talend.components:\1:$CONNECTOR_VERSION#" | \
+        grep -v 'tomitribe-crest'   | \
+        grep -v 'johnzon-core'      | \
+        grep -v 'container-core'    | \
+        grep -v 'slf4j'             | \
+        sort -u > component-registry.properties
+}
+
 echo "Environment:"
 echo " - TALEND_REGISTRY=$TALEND_REGISTRY"
 echo " - DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION"
 echo ""
+echo "-----------------------------------------------------"

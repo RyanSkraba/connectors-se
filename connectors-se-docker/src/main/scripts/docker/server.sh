@@ -19,9 +19,10 @@
 work_dir="$BASEDIR/target/docker_server"
 mkdir -p "$work_dir"
 cd "$work_dir"
-    grep '^      <artifactId>' "$BASEDIR/pom.xml" | sed "s#.*<artifactId>\(.*\)</artifactId>#\1=org.talend.components:\1:$CONNECTOR_VERSION#" | sort -u > component-registry.properties
     cp "$BASEDIR/src/main/docker/Dockerfile.server" Dockerfile
     cp -r "$BASEDIR/target/docker-m2" m2
+    cp "$BASEDIR/target/connectors-se-docker-setup-shade.jar" setup.jar
+    createComponentRegistry
 
     serverImage="tacokit/component-server:$COMPONENT_SERVER_IMAGE_VERSION"
     echo "Copying server from image $serverImage"
@@ -29,6 +30,9 @@ cd "$work_dir"
     echo "" >> ./component-kit/bin/setenv.sh
     echo 'export MEECROWAVE_OPTS="$MEECROWAVE_OPTS -Dtalend.component.server.component.registry=/opt/talend/connectors-se/component-registry.properties"' >> ./component-kit/bin/setenv.sh
     echo 'export MEECROWAVE_OPTS="$MEECROWAVE_OPTS -Dtalend.component.server.maven.repository=/opt/talend/connectors-se"' >> ./component-kit/bin/setenv.sh
+    echo '' >> ./component-kit/bin/setenv.sh
+    echo '[ ! -z "$CONNECTORS_SE_SETUP_OPTS" ] && java -jar /opt/talend/setup.jar' >> ./component-kit/bin/setenv.sh
+    echo '' >> ./component-kit/bin/setenv.sh
     echo "" >> ./component-kit/bin/setenv.sh
 
     repoImageApp=$(extractApplicationName "$BASEDIR/src/main/docker/Dockerfile.repository")

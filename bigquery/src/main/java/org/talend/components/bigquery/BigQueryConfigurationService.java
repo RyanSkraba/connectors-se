@@ -7,9 +7,9 @@ import org.talend.sdk.component.api.service.Service;
 @Service
 public class BigQueryConfigurationService {
 
-    public BigQueryOutputProperties toOutputDataSet(final BigQueryOutputDataSet configuration) {
+    public BigQueryOutputProperties toOutputDataSet(final BigQueryOutputConfig configuration) {
         final BigQueryOutputProperties properties = new BigQueryOutputProperties("name");
-        properties.setDatasetProperties(toDataSet(configuration));
+        properties.setDatasetProperties(toDataSet(configuration.getDataset()));
         properties.tableOperation
                 .setValue(BigQueryOutputProperties.TableOperation.valueOf(configuration.getTableOperation().name()));
         properties.writeOperation

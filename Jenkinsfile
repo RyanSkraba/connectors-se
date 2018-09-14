@@ -57,9 +57,6 @@ spec:
       }
     }
     stage('Build Docker Components Image') {
-      when {
-        expression { sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim() == 'master' }
-      }
       steps {
         container('maven') {
           withCredentials([
@@ -68,7 +65,7 @@ spec:
               passwordVariable: 'DOCKER_PASSWORD',
               usernameVariable: 'DOCKER_LOGIN')
           ]) {
-            sh "chmod +x ./connectors-se-docker/src/main/scripts/docker/*.sh && ./connectors-se-docker/src/main/scripts/docker/all.sh"
+            sh "chmod +x ./connectors-se-docker/src/main/scripts/docker/*.sh && ./connectors-se-docker/src/main/scripts/docker/all.sh `git rev-parse --abbrev-ref HEAD | tr / _`"
           }
         }
       }

@@ -32,8 +32,9 @@ class S3OutputTest {
 
     @Test
     void output() throws IOException {
-        final S3OutputDataSet configuration = new S3OutputDataSet();
-        configuration.setDatastore(new S3DataStore());
+        final S3OutputConfig configuration = new S3OutputConfig();
+        configuration.setDataset(new S3DataSet());
+        configuration.getDataset().setDatastore(new S3DataStore());
         configuration.setMergeOutput(true);
 
         final Map<String, String> asConfig = configurationByExample().forInstance(configuration).configured().toMap();

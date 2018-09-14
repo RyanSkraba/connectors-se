@@ -1,0 +1,27 @@
+= .jenkins folder
+
+This folder intended to create jobs to automate some boring tasks
+like creating a configurable job with prelisted docker images from artifactory.
+
+At the moment groovy jenkins sandbox doesn't enable enough code to be executed
+to go further so this is dead configuration but we keep it until it is whitelisted
+and enabled.
+
+To activate it back, add to the root `Jenkinsfile` the following stage:
+
+[source,groovy]
+----
+stage('Update jobs') {
+  when {
+    anyOf {
+      branch 'master'
+    }
+  }
+  steps {
+    jobDsl targets: '.jenkins/jobs/*.groovy',
+           removedJobAction: 'DELETE',
+           removedConfigFilesAction: 'DELETE',
+           sandbox: true
+  }
+}
+----

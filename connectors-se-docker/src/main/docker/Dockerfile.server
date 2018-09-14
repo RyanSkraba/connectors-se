@@ -2,8 +2,14 @@ FROM openjdk:8-jre-alpine
 
 ARG BUILD_DATE
 ARG DOCKER_IMAGE_VERSION
+ARG GIT_URL
+ARG GIT_BRANCH
+ARG GIT_REF
 
 LABEL com.talend.maintainer="Talend <support@talend.com>" \
+      com.talend.git.repositories="$GIT_URL" \
+      com.talend.git.branches="$GIT_BRANCH" \
+      com.talend.git.commits="$GIT_REF" \
       com.talend.build-date="$BUILD_DATE" \
       com.talend.name="Talend Component Kit Server With Connectors SE" \
       com.talend.application="component-server-with-connectors-se" \
@@ -25,6 +31,7 @@ WORKDIR /opt/talend
 
 COPY connectors-se/ connectors-se/
 COPY component-kit/ component-kit/
+COPY setup.jar /opt/talend/setup.jar
 
 WORKDIR $MEECROWAVE_BASE
 

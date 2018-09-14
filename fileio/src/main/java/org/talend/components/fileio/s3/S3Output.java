@@ -19,11 +19,11 @@ import org.talend.sdk.component.api.processor.Processor;
 @Documentation("This component writes data to S3.")
 public class S3Output extends PTransform<PCollection<IndexedRecord>, PDone> {
 
-    private final S3OutputDataSet configuration;
+    private final S3OutputConfig configuration;
 
     private final S3ConfigurationService service;
 
-    public S3Output(@Option("configuration") final S3OutputDataSet dataSet, final S3ConfigurationService service) {
+    public S3Output(@Option("configuration") final S3OutputConfig dataSet, final S3ConfigurationService service) {
         this.configuration = dataSet;
         this.service = service;
     }

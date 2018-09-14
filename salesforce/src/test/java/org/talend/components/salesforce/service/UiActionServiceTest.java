@@ -19,6 +19,7 @@ import org.talend.sdk.component.junit.BaseComponentsHandler;
 import org.talend.sdk.component.junit.http.api.HttpApiHandler;
 import org.talend.sdk.component.junit.http.junit5.HttpApi;
 import org.talend.sdk.component.junit.http.junit5.HttpApiInject;
+import org.talend.sdk.component.junit.http.junit5.HttpApiName;
 import org.talend.sdk.component.junit5.Injected;
 import org.talend.sdk.component.junit5.WithComponents;
 import org.talend.sdk.component.junit5.WithMavenServers;
@@ -55,6 +56,7 @@ class UiActionServiceTest {
     private Server serverWithSecuritykey;
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Validate connection")
     void validateBasicConnectionOK() {
         final BasicDataStore datasore = new BasicDataStore();
@@ -68,6 +70,7 @@ class UiActionServiceTest {
     }
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Validate connection with bad credentials")
     void validateBasicConnectionFailed() {
         final HealthCheckStatus status = service.validateBasicConnection(new BasicDataStore(), i18n, configuration);
@@ -77,6 +80,7 @@ class UiActionServiceTest {
     }
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Load modules")
     void loadModules() {
         final BasicDataStore datasore = new BasicDataStore();
@@ -90,6 +94,7 @@ class UiActionServiceTest {
     }
 
     @Test
+    @HttpApiName("${class}_${method}")
     @DisplayName("Load modules with bad basic credentials")
     void loadModulesWithBadCredentials() {
         assertThrows(IllegalStateException.class, () -> {

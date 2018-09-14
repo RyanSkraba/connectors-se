@@ -16,6 +16,6 @@
 #  limitations under the License.
 #
 
-. "$(dirname $0)/common.sh"
+. "$(dirname $0)/common.sh" $1
 . "$(dirname $0)/repository.sh"
 . "$(dirname $0)/server.sh"

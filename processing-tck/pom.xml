@@ -12,8 +12,8 @@
     <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <artifactId>processing</artifactId>
-  <name>Components :: Processing</name>
+  <artifactId>processing-tck</artifactId>
+  <name>Components :: Processing JSON</name>
 
   <properties>
     <!-- native beam -->

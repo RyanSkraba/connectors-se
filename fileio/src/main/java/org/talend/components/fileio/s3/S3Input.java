@@ -6,18 +6,16 @@ import org.apache.avro.generic.IndexedRecord;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PDone;
 import org.talend.components.simplefileio.runtime.s3.S3InputRuntime;
-import org.talend.components.simplefileio.runtime.s3.S3OutputRuntime;
 import org.talend.sdk.component.api.component.Icon;
 import org.talend.sdk.component.api.component.Version;
 import org.talend.sdk.component.api.configuration.Option;
+import org.talend.sdk.component.api.input.PartitionMapper;
 import org.talend.sdk.component.api.meta.Documentation;
-import org.talend.sdk.component.api.processor.Processor;
 
 @Version
 @Icon(FILE_S3_O)
-@Processor(name = "S3Input")
+@PartitionMapper(name = "S3Input")
 @Documentation("This component reads data from S3.")
 public class S3Input extends PTransform<PBegin, PCollection<IndexedRecord>> {
 
